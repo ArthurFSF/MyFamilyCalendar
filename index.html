@@ -1,616 +1,643 @@
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Agenda · Família Martins Rezende da Silva</title>
-  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>"/>
-
-  <!-- Tailwind CSS -->
-  <script src="https://cdn.tailwindcss.com"></script>
-
-  <!-- Firebase (compat) -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-
-  <!-- React 18 -->
-  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-
-  <!-- Babel (transpila JSX no browser) -->
-  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-
-  <style>
-    *{box-sizing:border-box}
-    body{margin:0;background:#F9FAFB;font-family:Inter,system-ui,-apple-system,sans-serif}
-    ::-webkit-scrollbar{width:4px;height:4px}
-    ::-webkit-scrollbar-thumb{background:#E5E7EB;border-radius:9999px}
-    input[type=date],input[type=time]{color-scheme:light}
-    .fade-in{animation:fadeIn .15s ease}
-    @keyframes fadeIn{from{opacity:0;transform:scale(.98)}to{opacity:1;transform:scale(1)}}
-    .pulse-dot{animation:pdot 2s infinite}
-    @keyframes pdot{0%,100%{opacity:1}50%{opacity:.4}}
-    .spin{animation:spin 1s linear infinite}
-    @keyframes spin{to{transform:rotate(360deg)}}
-  </style>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+  <meta http-equiv="Pragma" content="no-cache" />
+  <meta http-equiv="Expires" content="0" />
+  
+  <title>Agenda · Família Martins Rezende da Silva</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏠</text></svg>"/>
+  <script defer src="https://cdn.tailwindcss.com"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script defer src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script defer crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script defer crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+  <script defer src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    *{box-sizing:border-box}
+    body{margin:0;background:#F9FAFB;font-family:Inter,system-ui,-apple-system,sans-serif}
+    ::-webkit-scrollbar{width:4px;height:4px}
+    ::-webkit-scrollbar-thumb{background:#E5E7EB;border-radius:9999px}
+    input[type=date],input[type=time]{color-scheme:light}
+    .fade-in{animation:fadeIn .15s ease}
+    @keyframes fadeIn{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+    .pulse-dot{animation:pdot 2s infinite}
+    @keyframes pdot{0%,100%{opacity:1}50%{opacity:.4}}
+    .toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);z-index:999;animation:toastIn .2s ease}
+    @keyframes toastIn{from{opacity:0;transform:translateX(-50%) translateY(8px)}to{opacity:1;transform:translateX(-50%) translateY(0)}}
+  </style>
 </head>
 <body>
-  <div id="root"></div>
+  <div id="root"></div>
 
-  <script type="text/babel">
-    const { useState, useEffect, useCallback } = React;
+  <script type="text/babel">
+    const { useState, useEffect, useCallback, useRef } = React;
 
-    /* ══════════════════════════════════════════════════════════════════
-       ⚠️  PREENCHA COM SEUS DADOS DO FIREBASE
-           Firebase Console → Seu Projeto → ⚙️ Config do app web
-    ══════════════════════════════════════════════════════════════════ */
-    const FIREBASE_CONFIG = {
-      apiKey:            "SUA_API_KEY",
-      authDomain:        "SEU_PROJETO.firebaseapp.com",
-      projectId:         "SEU_PROJETO_ID",
-      storageBucket:     "SEU_PROJETO.appspot.com",
-      messagingSenderId: "SEU_SENDER_ID",
-      appId:             "SEU_APP_ID"
-    };
-    /* ══════════════════════════════════════════════════════════════════ */
+    const FIREBASE_CONFIG = {
+      apiKey:            "AIzaSyC6QarZdSXDIcs4tAQZGYkQR1gcI9yAU8E",
+      authDomain:        "agendafamiliar-27b26.firebaseapp.com",
+      projectId:         "agendafamiliar-27b26",
+      storageBucket:     "agendafamiliar-27b26.firebasestorage.app",
+      messagingSenderId: "427096201759",
+      appId:             "1:427096201759:web:c4f9ff05681423a856932a"
+    };
 
-    // Inicializa Firebase
-    let db = null;
-    try {
-      firebase.initializeApp(FIREBASE_CONFIG);
-      db = firebase.firestore();
-    } catch(e) { console.warn("Firebase não configurado:", e.message); }
+    let db = null;
+    try {
+      firebase.initializeApp(FIREBASE_CONFIG);
+      db = firebase.firestore();
+      // Ativa persistência offline para lidar melhor com assincronicidade e cache local
+      db.enablePersistence().catch(function(err) {
+        console.warn("Modo offline não suportado ou em uso em outra aba.", err);
+      });
+    } catch(e) { console.warn("Firebase não configurado:", e.message); }
 
-    // ── CONSTANTES ────────────────────────────────────────────────────
-    const CATS = [
-      { id:"arthur",  label:"Arthur",       color:"#3B82F6" },
-      { id:"anne",    label:"Anne",          color:"#8B5CF6" },
-      { id:"joao",    label:"João Marcelo",  color:"#10B981" },
-      { id:"maria",   label:"Maria Luíza",   color:"#F472B6" },
-      { id:"pais",    label:"Só os Pais",    color:"#EF4444" },
-      { id:"familia", label:"Família Toda",  color:"#F59E0B" },
-    ];
+    const CATS = [
+      { id:"arthur",  label:"Arthur",       color:"#3B82F6" },
+      { id:"anne",    label:"Anne",          color:"#8B5CF6" },
+      { id:"joao",    label:"João Marcelo",  color:"#10B981" },
+      { id:"maria",   label:"Maria Luíza",   color:"#F472B6" },
+      { id:"pais",    label:"Só os Pais",    color:"#EF4444" },
+      { id:"familia", label:"Família Toda",  color:"#F59E0B" },
+    ];
+    const DEF_TYPES = [
+      { id:"festa",       label:"Festa / Aniversário", emoji:"🎂", color:"#FDE68A" },
+      { id:"prova",       label:"Prova / Avaliação",    emoji:"📝", color:"#BFDBFE" },
+      { id:"atividade",   label:"Atividade / Esporte",  emoji:"🥋", color:"#D1FAE5" },
+      { id:"viagem",      label:"Viagem",               emoji:"✈️", color:"#E0E7FF" },
+      { id:"compromisso", label:"Compromisso Geral",    emoji:"📌", color:"#F3F4F6" },
+      { id:"trabalho",    label:"Trabalho",             emoji:"💼", color:"#FEE2E2" },
+      { id:"jantar",      label:"Jantar / Lazer",       emoji:"🍽️", color:"#FCE7F3" },
+      { id:"saude",       label:"Saúde / Médico",       emoji:"🏥", color:"#FEF3C7" },
+    ];
+    const DAYS    = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
+    const MONTHS  = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
+    const MONTHS_S= ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
 
-    const DEF_TYPES = [
-      { id:"festa",       label:"Festa / Aniversário", emoji:"🎂", color:"#FDE68A" },
-      { id:"prova",       label:"Prova / Avaliação",    emoji:"📝", color:"#BFDBFE" },
-      { id:"atividade",   label:"Atividade / Esporte",  emoji:"🥋", color:"#D1FAE5" },
-      { id:"viagem",      label:"Viagem",               emoji:"✈️", color:"#E0E7FF" },
-      { id:"compromisso", label:"Compromisso Geral",    emoji:"📌", color:"#F3F4F6" },
-      { id:"trabalho",    label:"Trabalho",             emoji:"💼", color:"#FEE2E2" },
-      { id:"jantar",      label:"Jantar / Lazer",       emoji:"🍽️", color:"#FCE7F3" },
-      { id:"saude",       label:"Saúde / Médico",       emoji:"🏥", color:"#FEF3C7" },
-    ];
+    const toStr = d => { const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0"); return `${y}-${m}-${day}`; };
+    const addD  = (d,n) => { const r=new Date(d); r.setDate(r.getDate()+n); return r; };
+    const wkSt  = d => { const r=new Date(d); r.setDate(r.getDate()-r.getDay()); return r; };
+    const dIM   = (y,m) => new Date(y,m+1,0).getDate();
+    const fDOM  = (y,m) => new Date(y,m,1).getDay();
 
-    const DAYS    = ["Dom","Seg","Ter","Qua","Qui","Sex","Sáb"];
-    const MONTHS  = ["Janeiro","Fevereiro","Março","Abril","Maio","Junho","Julho","Agosto","Setembro","Outubro","Novembro","Dezembro"];
-    const MONTHS_S= ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
+    const occursOn = (ev,ds) => {
+      if(ev.date===ds) return true;
+      if(!ev.recurrence||ev.recurrence==="none") return false;
+      const ed=new Date(ev.date+"T12:00:00"), td=new Date(ds+"T12:00:00");
+      if(td<ed) return false;
+      if(ev.recurrence==="weekly")  return ed.getDay()===td.getDay();
+      if(ev.recurrence==="monthly") return ed.getDate()===td.getDate();
+      if(ev.recurrence==="annual")  return ed.getDate()===td.getDate()&&ed.getMonth()===td.getMonth();
+      return false;
+    };
+    const evFor = (evs,ds,filters) =>
+      evs.filter(e=>filters.includes(e.category)&&occursOn(e,ds))
+         .sort((a,b)=>a.allDay===b.allDay?(a.startTime||"").localeCompare(b.startTime||""):a.allDay?-1:1);
 
-    // ── HELPERS ───────────────────────────────────────────────────────
-    const toStr  = d => { const y=d.getFullYear(),m=String(d.getMonth()+1).padStart(2,"0"),day=String(d.getDate()).padStart(2,"0"); return `${y}-${m}-${day}`; };
-    const addD   = (d,n) => { const r=new Date(d); r.setDate(r.getDate()+n); return r; };
-    const wkSt   = d => { const r=new Date(d); r.setDate(r.getDate()-r.getDay()); return r; };
-    const dIM    = (y,m) => new Date(y,m+1,0).getDate();
-    const fDOM   = (y,m) => new Date(y,m,1).getDay();
+    const Svg = ({children,s=18,c=""}) => (
+      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 24 24"
+        fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={c}>
+        {children}
+      </svg>
+    );
+    const ChevL = ({s=18,c=""}) => <Svg s={s} c={c}><polyline points="15 18 9 12 15 6"/></Svg>;
+    const ChevR = ({s=18,c=""}) => <Svg s={s} c={c}><polyline points="9 18 15 12 9 6"/></Svg>;
+    const Plus  = ({s=18,c=""}) => <Svg s={s} c={c}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Svg>;
+    const XIcon = ({s=18,c=""}) => <Svg s={s} c={c}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></Svg>;
+    const Edit  = ({s=18,c=""}) => <Svg s={s} c={c}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></Svg>;
+    const Trash = ({s=18,c=""}) => <Svg s={s} c={c}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></Svg>;
 
-    const occursOn = (ev,ds) => {
-      if(ev.date===ds) return true;
-      if(!ev.recurrence||ev.recurrence==="none") return false;
-      const ed=new Date(ev.date+"T12:00:00"), td=new Date(ds+"T12:00:00");
-      if(td<ed) return false;
-      if(ev.recurrence==="weekly")  return ed.getDay()===td.getDay();
-      if(ev.recurrence==="monthly") return ed.getDate()===td.getDate();
-      if(ev.recurrence==="annual")  return ed.getDate()===td.getDate()&&ed.getMonth()===td.getMonth();
-      return false;
-    };
-    const evFor = (evs,ds,filters) =>
-      evs.filter(e=>filters.includes(e.category)&&occursOn(e,ds))
-         .sort((a,b)=>a.allDay===b.allDay?(a.startTime||"").localeCompare(b.startTime||""):a.allDay?-1:1);
+    function Toast({msg,type,onDone}) {
+      useEffect(()=>{ const t=setTimeout(onDone,3000); return()=>clearTimeout(t); },[]);
+      const bg=type==="ok"?"bg-green-500":type==="err"?"bg-red-500":"bg-gray-800";
+      return (
+        <div className={`toast flex items-center gap-2 px-4 py-3 rounded-xl text-white text-sm font-semibold shadow-xl ${bg}`}>
+          <span>{type==="ok"?"✅":type==="err"?"❌":"ℹ️"}</span>
+          {msg}
+        </div>
+      );
+    }
 
-    // ── ÍCONES SVG ────────────────────────────────────────────────────
-    const Svg = ({children,s=18,c=""}) => (
-      <svg xmlns="http://www.w3.org/2000/svg" width={s} height={s} viewBox="0 0 24 24"
-        fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={c}>
-        {children}
-      </svg>
-    );
-    const ChevL = ({s=18,c=""}) => <Svg s={s} c={c}><polyline points="15 18 9 12 15 6"/></Svg>;
-    const ChevR = ({s=18,c=""}) => <Svg s={s} c={c}><polyline points="9 18 15 12 9 6"/></Svg>;
-    const Plus  = ({s=18,c=""}) => <Svg s={s} c={c}><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></Svg>;
-    const XIcon = ({s=18,c=""}) => <Svg s={s} c={c}><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></Svg>;
-    const Edit  = ({s=18,c=""}) => <Svg s={s} c={c}><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></Svg>;
-    const Trash = ({s=18,c=""}) => <Svg s={s} c={c}><polyline points="3 6 5 6 21 6"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/><path d="M10 11v6M14 11v6"/><path d="M9 6V4h6v2"/></Svg>;
+    function Confirm({msg,onYes,onNo}) {
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl p-6 w-full max-w-xs text-center fade-in">
+            <p className="text-2xl mb-3">🗑️</p>
+            <p className="text-sm font-semibold text-gray-700 mb-5">{msg}</p>
+            <div className="flex gap-3">
+              <button onClick={onNo} className="flex-1 py-2.5 border border-gray-200 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors">Cancelar</button>
+              <button onClick={onYes} className="flex-1 py-2.5 bg-red-500 text-white rounded-xl text-sm font-bold hover:bg-red-600 transition-colors">Excluir</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-    // ── CHIP ──────────────────────────────────────────────────────────
-    function Chip({ev,types,compact,onClick}) {
-      const cat=CATS.find(c=>c.id===ev.category), type=types.find(t=>t.id===ev.typeId);
-      if(compact) return (
-        <div onClick={e=>{e.stopPropagation();onClick(ev);}}
-          className="flex items-center gap-1 px-1.5 py-0.5 rounded-md cursor-pointer hover:opacity-75 transition-opacity truncate"
-          style={{backgroundColor:type?.color||"#F3F4F6"}}>
-          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{backgroundColor:cat?.color}}/>
-          <span className="truncate text-gray-700 font-medium leading-tight" style={{fontSize:"11px"}}>
-            {!ev.allDay&&ev.startTime?`${ev.startTime} `:""}{ev.title}
-          </span>
-        </div>
-      );
-      return (
-        <div onClick={()=>onClick(ev)}
-          className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:opacity-90 transition-all hover:shadow-sm"
-          style={{backgroundColor:type?.color||"#F3F4F6"}}>
-          <span className="w-3 h-3 rounded-full flex-shrink-0" style={{backgroundColor:cat?.color}}/>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-semibold text-gray-800 truncate">{ev.title}</p>
-            <p className="text-xs text-gray-500 mt-0.5">{ev.allDay?"Dia todo":`${ev.startTime}–${ev.endTime}`} · {type?.emoji} {type?.label}</p>
-          </div>
-        </div>
-      );
-    }
+    function Chip({ev,types,compact,onClick}) {
+      const cat=CATS.find(c=>c.id===ev.category), type=types.find(t=>t.id===ev.typeId);
+      if(compact) return (
+        <div onClick={e=>{e.stopPropagation();onClick(ev);}}
+          className="flex items-center gap-1 px-1.5 py-0.5 rounded-md cursor-pointer hover:opacity-75 transition-opacity truncate"
+          style={{backgroundColor:type?.color||"#F3F4F6"}}>
+          <span className="w-1.5 h-1.5 rounded-full flex-shrink-0" style={{backgroundColor:cat?.color}}/>
+          <span className="truncate text-gray-700 font-medium leading-tight" style={{fontSize:"11px"}}>
+            {!ev.allDay&&ev.startTime?`${ev.startTime} `:""}{ev.title}
+          </span>
+        </div>
+      );
+      return (
+        <div onClick={()=>onClick(ev)}
+          className="flex items-center gap-3 p-3 rounded-xl cursor-pointer hover:opacity-90 transition-all hover:shadow-sm"
+          style={{backgroundColor:type?.color||"#F3F4F6"}}>
+          <span className="w-3 h-3 rounded-full flex-shrink-0" style={{backgroundColor:cat?.color}}/>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-semibold text-gray-800 truncate">{ev.title}</p>
+            <p className="text-xs text-gray-500 mt-0.5">{ev.allDay?"Dia todo":`${ev.startTime}–${ev.endTime}`} · {type?.emoji} {type?.label}</p>
+          </div>
+        </div>
+      );
+    }
 
-    // ── DAILY VIEW ────────────────────────────────────────────────────
-    function DailyView({cur,evs,types,filters,onClick}) {
-      const ds=toStr(cur), dayEvs=evFor(evs,ds,filters);
-      const lbl=cur.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
-      return (
-        <div className="p-4 space-y-3 min-h-64">
-          <p className="text-sm font-medium text-gray-400 capitalize">{lbl}</p>
-          {dayEvs.length===0
-            ? <div className="text-center py-16 text-gray-300"><div style={{fontSize:"3rem"}} className="mb-3">📅</div><p className="text-sm">Nenhum evento para este dia</p></div>
-            : <div className="space-y-2">{dayEvs.map(e=><Chip key={e.id+ds} ev={e} types={types} onClick={onClick}/>)}</div>}
-        </div>
-      );
-    }
+    function DailyView({cur,evs,types,filters,onClick}) {
+      const ds=toStr(cur), dayEvs=evFor(evs,ds,filters);
+      const lbl=cur.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long"});
+      return (
+        <div className="p-4 space-y-3 min-h-64">
+          <p className="text-sm font-medium text-gray-400 capitalize">{lbl}</p>
+          {dayEvs.length===0
+            ? <div className="text-center py-16 text-gray-300"><div style={{fontSize:"3rem"}} className="mb-3">📅</div><p className="text-sm">Nenhum evento para este dia</p></div>
+            : <div className="space-y-2">{dayEvs.map(e=><Chip key={e.id+ds} ev={e} types={types} onClick={onClick}/>)}</div>}
+        </div>
+      );
+    }
 
-    // ── WEEKLY VIEW ───────────────────────────────────────────────────
-    function WeeklyView({cur,evs,types,filters,onClick,onDay}) {
-      const ws=wkSt(cur), days=Array.from({length:7},(_,i)=>addD(ws,i));
-      const today=toStr(new Date()), curDs=toStr(cur);
-      return (
-        <div className="overflow-x-auto">
-          <div className="grid min-w-full" style={{gridTemplateColumns:"repeat(7,minmax(110px,1fr))"}}>
-            {days.map((day,i)=>{
-              const ds=toStr(day), devs=evFor(evs,ds,filters), iT=ds===today, iC=ds===curDs;
-              return (
-                <div key={i} className="border-r border-gray-100 last:border-r-0">
-                  <div className="p-2 text-center border-b border-gray-100 cursor-pointer hover:bg-gray-50" onClick={()=>onDay(day)}>
-                    <p className="text-xs font-semibold text-gray-400 uppercase">{DAYS[day.getDay()]}</p>
-                    <div className={`w-8 h-8 mx-auto mt-1 flex items-center justify-center rounded-full text-sm font-bold ${iT?"bg-blue-500 text-white":iC?"bg-blue-100 text-blue-600":"text-gray-700"}`}>{day.getDate()}</div>
-                  </div>
-                  <div className="p-1 space-y-1 min-h-24">
-                    {devs.map(e=><Chip key={e.id+ds} ev={e} types={types} compact onClick={onClick}/>)}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
+    function WeeklyView({cur,evs,types,filters,onClick,onDay}) {
+      const ws=wkSt(cur), days=Array.from({length:7},(_,i)=>addD(ws,i));
+      const today=toStr(new Date()), curDs=toStr(cur);
+      return (
+        <div className="overflow-x-auto">
+          <div className="grid min-w-full" style={{gridTemplateColumns:"repeat(7,minmax(110px,1fr))"}}>
+            {days.map((day,i)=>{
+              const ds=toStr(day), devs=evFor(evs,ds,filters), iT=ds===today, iC=ds===curDs;
+              return (
+                <div key={i} className="border-r border-gray-100 last:border-r-0">
+                  <div className="p-2 text-center border-b border-gray-100 cursor-pointer hover:bg-gray-50" onClick={()=>onDay(day)}>
+                    <p className="text-xs font-semibold text-gray-400 uppercase">{DAYS[day.getDay()]}</p>
+                    <div className={`w-8 h-8 mx-auto mt-1 flex items-center justify-center rounded-full text-sm font-bold ${iT?"bg-blue-500 text-white":iC?"bg-blue-100 text-blue-600":"text-gray-700"}`}>{day.getDate()}</div>
+                  </div>
+                  <div className="p-1 space-y-1 min-h-24">
+                    {devs.map(e=><Chip key={e.id+ds} ev={e} types={types} compact onClick={onClick}/>)}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
 
-    // ── MONTHLY VIEW ──────────────────────────────────────────────────
-    function MonthlyView({cur,evs,types,filters,onClick,onDay}) {
-      const y=cur.getFullYear(), m=cur.getMonth();
-      const cells=[...Array(fDOM(y,m)).fill(null),...Array.from({length:dIM(y,m)},(_,i)=>i+1)];
-      const today=toStr(new Date()), curDs=toStr(cur);
-      return (
-        <div className="p-2">
-          <div className="grid grid-cols-7 mb-1">
-            {DAYS.map(d=><div key={d} className="text-center text-xs font-semibold text-gray-400 uppercase py-2">{d}</div>)}
-          </div>
-          <div className="grid grid-cols-7 gap-px bg-gray-100 rounded-xl overflow-hidden border border-gray-100">
-            {cells.map((day,i)=>{
-              if(!day) return <div key={i} className="bg-gray-50 min-h-20"/>;
-              const ds=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-              const devs=evFor(evs,ds,filters), iT=ds===today, iC=ds===curDs;
-              return (
-                <div key={i} className="bg-white min-h-20 p-1.5 cursor-pointer hover:bg-gray-50 transition-colors" onClick={()=>onDay(new Date(y,m,day))}>
-                  <div className={`w-7 h-7 flex items-center justify-center rounded-full text-sm font-semibold mb-1 ${iT?"bg-blue-500 text-white":iC?"bg-blue-100 text-blue-600":"text-gray-700"}`}>{day}</div>
-                  <div className="space-y-0.5">
-                    {devs.slice(0,3).map(e=><Chip key={e.id+ds} ev={e} types={types} compact onClick={onClick}/>)}
-                    {devs.length>3&&<p className="text-gray-400 pl-1" style={{fontSize:"11px"}}>+{devs.length-3} mais</p>}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        </div>
-      );
-    }
+    function MonthlyView({cur,evs,types,filters,onClick,onDay}) {
+      const y=cur.getFullYear(), m=cur.getMonth();
+      const cells=[...Array(fDOM(y,m)).fill(null),...Array.from({length:dIM(y,m)},(_,i)=>i+1)];
+      const today=toStr(new Date()), curDs=toStr(cur);
+      return (
+        <div className="p-2">
+          <div className="grid grid-cols-7 mb-1">
+            {DAYS.map(d=><div key={d} className="text-center text-xs font-semibold text-gray-400 uppercase py-2">{d}</div>)}
+          </div>
+          <div className="grid grid-cols-7 gap-px bg-gray-100 rounded-xl overflow-hidden border border-gray-100">
+            {cells.map((day,i)=>{
+              if(!day) return <div key={i} className="bg-gray-50 min-h-20"/>;
+              const ds=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+              const devs=evFor(evs,ds,filters), iT=ds===today, iC=ds===curDs;
+              return (
+                <div key={i} className="bg-white min-h-20 p-1.5 cursor-pointer hover:bg-gray-50 transition-colors" onClick={()=>onDay(new Date(y,m,day))}>
+                  <div className={`w-7 h-7 flex items-center justify-center rounded-full text-sm font-semibold mb-1 ${iT?"bg-blue-500 text-white":iC?"bg-blue-100 text-blue-600":"text-gray-700"}`}>{day}</div>
+                  <div className="space-y-0.5">
+                    {devs.slice(0,3).map(e=><Chip key={e.id+ds} ev={e} types={types} compact onClick={onClick}/>)}
+                    {devs.length>3&&<p className="text-gray-400 pl-1" style={{fontSize:"11px"}}>+{devs.length-3} mais</p>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    }
 
-    // ── ANNUAL VIEW ───────────────────────────────────────────────────
-    function AnnualView({cur,evs,types,filters,onMonth}) {
-      const y=cur.getFullYear(), today=toStr(new Date());
-      return (
-        <div className="p-4 grid gap-4" style={{gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))"}}>
-          {Array.from({length:12},(_,m)=>{
-            const nd=dIM(y,m), fd=fDOM(y,m);
-            return (
-              <div key={m} className="bg-gray-50 rounded-xl p-3 cursor-pointer hover:bg-blue-50 transition-colors" onClick={()=>onMonth(m)}>
-                <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">{MONTHS_S[m]}</h3>
-                <div className="grid grid-cols-7 gap-px">
-                  {DAYS.map(d=><div key={d} className="text-center text-gray-300 text-xs font-medium">{d[0]}</div>)}
-                  {Array.from({length:fd}).map((_,i)=><div key={`e${i}`}/>)}
-                  {Array.from({length:nd},(_,i)=>{
-                    const day=i+1;
-                    const ds=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
-                    const devs=evFor(evs,ds,filters), iT=ds===today;
-                    const dots=devs.slice(0,3).map(e=>CATS.find(c=>c.id===e.category)?.color);
-                    return (
-                      <div key={day} className="flex flex-col items-center py-0.5">
-                        <span className={`text-xs w-5 h-5 flex items-center justify-center rounded-full ${iT?"bg-blue-500 text-white font-bold":"text-gray-600"}`}>{day}</span>
-                        {dots.length>0&&<div className="flex gap-px mt-0.5">{dots.map((c,di)=><span key={di} className="w-1 h-1 rounded-full" style={{backgroundColor:c}}/>)}</div>}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      );
-    }
+    function AnnualView({cur,evs,types,filters,onMonth}) {
+      const y=cur.getFullYear(), today=toStr(new Date());
+      return (
+        <div className="p-4 grid gap-4" style={{gridTemplateColumns:"repeat(auto-fill,minmax(200px,1fr))"}}>
+          {Array.from({length:12},(_,m)=>{
+            const nd=dIM(y,m), fd=fDOM(y,m);
+            return (
+              <div key={m} className="bg-gray-50 rounded-xl p-3 cursor-pointer hover:bg-blue-50 transition-colors" onClick={()=>onMonth(m)}>
+                <h3 className="text-xs font-bold text-gray-600 uppercase tracking-wide mb-2">{MONTHS_S[m]}</h3>
+                <div className="grid grid-cols-7 gap-px">
+                  {DAYS.map(d=><div key={d} className="text-center text-gray-300 text-xs font-medium">{d[0]}</div>)}
+                  {Array.from({length:fd}).map((_,i)=><div key={`e${i}`}/>)}
+                  {Array.from({length:nd},(_,i)=>{
+                    const day=i+1;
+                    const ds=`${y}-${String(m+1).padStart(2,"0")}-${String(day).padStart(2,"0")}`;
+                    const devs=evFor(evs,ds,filters), iT=ds===today;
+                    const dots=devs.slice(0,3).map(e=>CATS.find(c=>c.id===e.category)?.color);
+                    return (
+                      <div key={day} className="flex flex-col items-center py-0.5">
+                        <span className={`text-xs w-5 h-5 flex items-center justify-center rounded-full ${iT?"bg-blue-500 text-white font-bold":"text-gray-600"}`}>{day}</span>
+                        {dots.length>0&&<div className="flex gap-px mt-0.5">{dots.map((c,di)=><span key={di} className="w-1 h-1 rounded-full" style={{backgroundColor:c}}/>)}</div>}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      );
+    }
 
-    // ── EVENT MODAL ───────────────────────────────────────────────────
-    function EventModal({ev,types,onSave,onClose,onAddType}) {
-      const isNew=!ev?.id, today=toStr(new Date());
-      const [f,setF]=useState({
-        title:ev?.title||"", category:ev?.category||"familia", typeId:ev?.typeId||"compromisso",
-        date:ev?.date||today, allDay:ev?.allDay!==undefined?ev.allDay:true,
-        startTime:ev?.startTime||"09:00", endTime:ev?.endTime||"10:00",
-        recurrence:ev?.recurrence||"none", notes:ev?.notes||"",
-      });
-      const [showNT,setShowNT]=useState(false);
-      const [nt,setNt]=useState({label:"",emoji:"📌",color:"#E0F2FE"});
-      const [saving,setSaving]=useState(false);
-      const s=(k,v)=>setF(p=>({...p,[k]:v}));
+    function EventModal({ev,types,onSave,onClose,onAddType,onToast}) {
+      const isNew=!ev?.id, today=toStr(new Date());
+      const [f,setF]=useState({
+        title:ev?.title||"", category:ev?.category||"familia", typeId:ev?.typeId||"compromisso",
+        date:ev?.date||today, allDay:ev?.allDay!==undefined?ev.allDay:true,
+        startTime:ev?.startTime||"09:00", endTime:ev?.endTime||"10:00",
+        recurrence:ev?.recurrence||"none", notes:ev?.notes||"",
+      });
+      const [showNT,setShowNT]=useState(false);
+      const [nt,setNt]=useState({label:"",emoji:"📌",color:"#E0F2FE"});
+      const [saving,setSaving]=useState(false);
+      const s=(k,v)=>setF(p=>({...p,[k]:v}));
 
-      const handleSave=async()=>{
-        if(!f.title.trim()||saving) return;
-        setSaving(true);
-        await onSave({...f,id:ev?.id||null,createdAt:ev?.createdAt||new Date().toISOString()});
-        setSaving(false);
-      };
-      const handleAddType=async()=>{
-        if(!nt.label.trim()) return;
-        const newId=await onAddType(nt);
-        if(newId) s("typeId",newId);
-        setShowNT(false);
-        setNt({label:"",emoji:"📌",color:"#E0F2FE"});
-      };
+      const handleSave = async () => {
+        if (!f.title.trim() || saving) return;
+        setSaving(true);
+        try {
+          const payload = { ...f, id: ev?.id || null, createdAt: ev?.createdAt || new Date().toISOString() };
+          const saveOperation = onSave(payload);
+          
+          const timeout = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("Timeout: Servidor inacessível ou permissão negada no Firestore.")), 5000)
+          );
 
-      return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-screen overflow-y-auto fade-in">
-            <div className="flex items-center justify-between p-5 border-b border-gray-100">
-              <h2 className="text-lg font-bold text-gray-800">{isNew?"Novo Evento":"Editar Evento"}</h2>
-              <button onClick={onClose} className="p-2 hover:bg-gray-100 rounded-full transition-colors"><XIcon s={18} c="text-gray-400"/></button>
-            </div>
-            <div className="p-5 space-y-5">
-              {/* Título */}
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5 block">Título</label>
-                <input type="text" value={f.title} onChange={e=>s("title",e.target.value)} placeholder="Nome do evento..."
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition"/>
-              </div>
-              {/* Categoria */}
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5 block">Para quem</label>
-                <div className="grid grid-cols-3 gap-2">
-                  {CATS.map(cat=>(
-                    <button key={cat.id} onClick={()=>s("category",cat.id)}
-                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border-2 transition-all"
-                      style={{borderColor:f.category===cat.id?cat.color:"#E5E7EB",backgroundColor:f.category===cat.id?cat.color+"20":"white",color:f.category===cat.id?cat.color:"#9CA3AF"}}>
-                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{backgroundColor:cat.color}}/>{cat.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {/* Tipo */}
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5 block">Tipo de Evento</label>
-                <div className="flex flex-wrap gap-2">
-                  {types.map(t=>(
-                    <button key={t.id} onClick={()=>s("typeId",t.id)}
-                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border-2 transition-all"
-                      style={{backgroundColor:f.typeId===t.id?t.color:"white",borderColor:f.typeId===t.id?t.color:"#E5E7EB",color:"#374151"}}>
-                      {t.emoji} {t.label}
-                    </button>
-                  ))}
-                  <button onClick={()=>setShowNT(!showNT)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border-2 border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-all">
-                    <Plus s={12}/> Novo tipo
-                  </button>
-                </div>
-                {showNT&&(
-                  <div className="mt-3 p-3 bg-gray-50 rounded-xl space-y-2">
-                    <div className="flex gap-2">
-                      <input value={nt.emoji} onChange={e=>setNt(t=>({...t,emoji:e.target.value}))} className="w-14 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none" placeholder="🎯"/>
-                      <input value={nt.label} onChange={e=>setNt(t=>({...t,label:e.target.value}))} className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none" placeholder="Nome do tipo..."/>
-                      <input type="color" value={nt.color} onChange={e=>setNt(t=>({...t,color:e.target.value}))} className="w-10 h-9 border border-gray-200 rounded-lg cursor-pointer"/>
-                    </div>
-                    <button onClick={handleAddType} className="w-full py-1.5 bg-blue-500 text-white text-xs font-bold rounded-lg hover:bg-blue-600 transition-colors">Adicionar Tipo</button>
-                  </div>
-                )}
-              </div>
-              {/* Data */}
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5 block">Data</label>
-                <input type="date" value={f.date} onChange={e=>s("date",e.target.value)}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition"/>
-              </div>
-              {/* Horário */}
-              <div>
-                <div className="flex items-center gap-3 mb-2">
-                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Horário</label>
-                  <button onClick={()=>s("allDay",!f.allDay)} className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${f.allDay?"bg-blue-100 text-blue-600":"bg-gray-100 text-gray-500"}`}>
-                    {f.allDay?"☀️ Dia todo":"⏰ Com horário"}
-                  </button>
-                </div>
-                {!f.allDay&&(
-                  <div className="flex gap-3">
-                    <div className="flex-1"><label className="text-xs text-gray-400 mb-1 block">Início</label><input type="time" value={f.startTime} onChange={e=>s("startTime",e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"/></div>
-                    <div className="flex-1"><label className="text-xs text-gray-400 mb-1 block">Fim</label><input type="time" value={f.endTime} onChange={e=>s("endTime",e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"/></div>
-                  </div>
-                )}
-              </div>
-              {/* Repetição */}
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5 block">Repetição</label>
-                <div className="grid grid-cols-4 gap-2">
-                  {[{id:"none",l:"Não repete"},{id:"weekly",l:"Semanal"},{id:"monthly",l:"Mensal"},{id:"annual",l:"Anual"}].map(r=>(
-                    <button key={r.id} onClick={()=>s("recurrence",r.id)} className="py-2 rounded-xl text-xs font-semibold border-2 transition-all"
-                      style={{borderColor:f.recurrence===r.id?"#3B82F6":"#E5E7EB",backgroundColor:f.recurrence===r.id?"#EFF6FF":"white",color:f.recurrence===r.id?"#3B82F6":"#9CA3AF"}}>
-                      {r.l}
-                    </button>
-                  ))}
-                </div>
-              </div>
-              {/* Observações */}
-              <div>
-                <label className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5 block">Observações</label>
-                <textarea value={f.notes} onChange={e=>s("notes",e.target.value)} placeholder="Detalhes adicionais..." rows={3}
-                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition resize-none"/>
-              </div>
-            </div>
-            <div className="flex gap-3 p-5 pt-0">
-              <button onClick={onClose} className="flex-1 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors">Cancelar</button>
-              <button onClick={handleSave} disabled={!f.title.trim()||saving}
-                className="flex-1 py-3 bg-blue-500 text-white rounded-xl text-sm font-bold hover:bg-blue-600 disabled:opacity-40 transition-colors">
-                {saving?"Salvando...":isNew?"Criar Evento":"Salvar"}
-              </button>
-            </div>
-          </div>
-        </div>
-      );
-    }
+          await Promise.race([saveOperation, timeout]);
 
-    // ── EVENT DETAIL ──────────────────────────────────────────────────
-    function EventDetail({ev,types,onEdit,onDelete,onClose}) {
-      const cat=CATS.find(c=>c.id===ev.category), type=types.find(t=>t.id===ev.typeId);
-      const d=new Date(ev.date+"T12:00:00");
-      const dl=d.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
-      const rLabel={none:"Não repete",weekly:"Repete semanalmente",monthly:"Repete mensalmente",annual:"Repete anualmente"}[ev.recurrence||"none"];
-      return (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
-            <div className="p-5 pb-4" style={{backgroundColor:type?.color||"#F3F4F6"}}>
-              <div className="flex items-start justify-between mb-2">
-                <span style={{fontSize:"2rem"}}>{type?.emoji||"📌"}</span>
-                <button onClick={onClose} className="p-1.5 hover:bg-black hover:bg-opacity-10 rounded-full transition-colors"><XIcon s={16} c="text-gray-600"/></button>
-              </div>
-              <h2 className="text-xl font-bold text-gray-800 leading-tight">{ev.title}</h2>
-              <div className="flex items-center gap-2 mt-2">
-                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold text-white" style={{backgroundColor:cat?.color}}>{cat?.label}</span>
-                <span className="text-xs text-gray-500 font-medium">{type?.label}</span>
-              </div>
-            </div>
-            <div className="p-5 space-y-3">
-              <div className="flex items-start gap-3">
-                <span className="text-base mt-0.5">📅</span>
-                <div>
-                  <p className="text-sm font-semibold text-gray-800 capitalize">{dl}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">{ev.allDay?"Dia todo":`${ev.startTime} — ${ev.endTime}`}</p>
-                </div>
-              </div>
-              {ev.recurrence&&ev.recurrence!=="none"&&(
-                <div className="flex items-center gap-3"><span>🔄</span><p className="text-sm text-gray-500">{rLabel}</p></div>
-              )}
-              {ev.notes&&(
-                <div className="flex items-start gap-3"><span className="mt-0.5">💬</span><p className="text-sm text-gray-600 leading-relaxed">{ev.notes}</p></div>
-              )}
-            </div>
-            <div className="flex gap-3 p-5 pt-0">
-              <button onClick={()=>onDelete(ev.id)} className="flex items-center justify-center gap-2 flex-1 py-2.5 border border-red-200 text-red-500 rounded-xl text-sm font-semibold hover:bg-red-50 transition-colors"><Trash s={14}/>Excluir</button>
-              <button onClick={()=>onEdit(ev)} className="flex items-center justify-center gap-2 flex-1 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-bold hover:bg-blue-600 transition-colors"><Edit s={14}/>Editar</button>
-            </div>
-          </div>
-        </div>
-      );
-    }
+          onToast(isNew ? "Evento criado!" : "Evento atualizado!", "ok");
+          onClose(); 
+        } catch (err) {
+          console.error("Erro ao salvar evento:", err);
+          onToast("Falha de rede ou permissão. Verifique o Firestore.", "err");
+          setSaving(false);
+        }
+      };
 
-    // ── APP PRINCIPAL ─────────────────────────────────────────────────
-    function App() {
-      const [evs,setEvs]         = useState([]);
-      const [types,setTypes]     = useState(DEF_TYPES);
-      const [view,setView]       = useState("monthly");
-      const [cur,setCur]         = useState(new Date());
-      const [filters,setFilters] = useState(CATS.map(c=>c.id));
-      const [showModal,setShowModal] = useState(false);
-      const [editing,setEditing] = useState(null);
-      const [detail,setDetail]   = useState(null);
-      const [loading,setLoading] = useState(true);
-      const [synced,setSynced]   = useState(false);
+      const handleAddType=async()=>{
+        if(!nt.label.trim()) return;
+        try {
+          const newId=await onAddType(nt);
+          if(newId) s("typeId",newId);
+          setShowNT(false);
+          setNt({label:"",emoji:"📌",color:"#E0F2FE"});
+        } catch(err) {
+          onToast("Erro ao criar tipo.","err");
+        }
+      };
 
-      // Firebase: escuta em tempo real
-      useEffect(()=>{
-        if(!db){ setLoading(false); return; }
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-screen overflow-y-auto fade-in">
+            <div className="flex items-center justify-between p-5 border-b border-gray-100">
+              <h2 className="text-lg font-bold text-gray-800">{isNew?"Novo Evento":"Editar Evento"}</h2>
+              <button onClick={onClose} disabled={saving} className="p-2 hover:bg-gray-100 rounded-full transition-colors disabled:opacity-40"><XIcon s={18} c="text-gray-400"/></button>
+            </div>
+            <div className="p-5 space-y-5">
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5 block">Título</label>
+                <input type="text" value={f.title} onChange={e=>s("title",e.target.value)} placeholder="Nome do evento..."
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition"/>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5 block">Para quem</label>
+                <div className="grid grid-cols-3 gap-2">
+                  {CATS.map(cat=>(
+                    <button key={cat.id} onClick={()=>s("category",cat.id)}
+                      className="flex items-center gap-2 px-3 py-2 rounded-xl text-xs font-semibold border-2 transition-all"
+                      style={{borderColor:f.category===cat.id?cat.color:"#E5E7EB",backgroundColor:f.category===cat.id?cat.color+"20":"white",color:f.category===cat.id?cat.color:"#9CA3AF"}}>
+                      <span className="w-2 h-2 rounded-full flex-shrink-0" style={{backgroundColor:cat.color}}/>{cat.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5 block">Tipo de Evento</label>
+                <div className="flex flex-wrap gap-2">
+                  {types.map(t=>(
+                    <button key={t.id} onClick={()=>s("typeId",t.id)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border-2 transition-all"
+                      style={{backgroundColor:f.typeId===t.id?t.color:"white",borderColor:f.typeId===t.id?t.color:"#E5E7EB",color:"#374151"}}>
+                      {t.emoji} {t.label}
+                    </button>
+                  ))}
+                  <button onClick={()=>setShowNT(!showNT)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold border-2 border-dashed border-gray-300 text-gray-400 hover:border-blue-400 hover:text-blue-500 transition-all">
+                    <Plus s={12}/> Novo tipo
+                  </button>
+                </div>
+                {showNT&&(
+                  <div className="mt-3 p-3 bg-gray-50 rounded-xl space-y-2">
+                    <div className="flex gap-2">
+                      <input value={nt.emoji} onChange={e=>setNt(t=>({...t,emoji:e.target.value}))} className="w-14 border border-gray-200 rounded-lg px-2 py-1.5 text-sm text-center focus:outline-none" placeholder="🎯"/>
+                      <input value={nt.label} onChange={e=>setNt(t=>({...t,label:e.target.value}))} className="flex-1 border border-gray-200 rounded-lg px-2 py-1.5 text-sm focus:outline-none" placeholder="Nome do tipo..."/>
+                      <input type="color" value={nt.color} onChange={e=>setNt(t=>({...t,color:e.target.value}))} className="w-10 h-9 border border-gray-200 rounded-lg cursor-pointer"/>
+                    </div>
+                    <button onClick={handleAddType} className="w-full py-1.5 bg-blue-500 text-white text-xs font-bold rounded-lg hover:bg-blue-600 transition-colors">Adicionar Tipo</button>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5 block">Data</label>
+                <input type="date" value={f.date} onChange={e=>s("date",e.target.value)}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition"/>
+              </div>
+              <div>
+                <div className="flex items-center gap-3 mb-2">
+                  <label className="text-xs font-bold text-gray-400 uppercase tracking-wide">Horário</label>
+                  <button onClick={()=>s("allDay",!f.allDay)} className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${f.allDay?"bg-blue-100 text-blue-600":"bg-gray-100 text-gray-500"}`}>
+                    {f.allDay?"☀️ Dia todo":"⏰ Com horário"}
+                  </button>
+                </div>
+                {!f.allDay&&(
+                  <div className="flex gap-3">
+                    <div className="flex-1"><label className="text-xs text-gray-400 mb-1 block">Início</label><input type="time" value={f.startTime} onChange={e=>s("startTime",e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"/></div>
+                    <div className="flex-1"><label className="text-xs text-gray-400 mb-1 block">Fim</label><input type="time" value={f.endTime} onChange={e=>s("endTime",e.target.value)} className="w-full border border-gray-200 rounded-xl px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200"/></div>
+                  </div>
+                )}
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5 block">Repetição</label>
+                <div className="grid grid-cols-4 gap-2">
+                  {[{id:"none",l:"Não repete"},{id:"weekly",l:"Semanal"},{id:"monthly",l:"Mensal"},{id:"annual",l:"Anual"}].map(r=>(
+                    <button key={r.id} onClick={()=>s("recurrence",r.id)} className="py-2 rounded-xl text-xs font-semibold border-2 transition-all"
+                      style={{borderColor:f.recurrence===r.id?"#3B82F6":"#E5E7EB",backgroundColor:f.recurrence===r.id?"#EFF6FF":"white",color:f.recurrence===r.id?"#3B82F6":"#9CA3AF"}}>
+                      {r.l}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <label className="text-xs font-bold text-gray-400 uppercase tracking-wide mb-1.5 block">Observações</label>
+                <textarea value={f.notes} onChange={e=>s("notes",e.target.value)} placeholder="Detalhes adicionais..." rows={3}
+                  className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-400 transition resize-none"/>
+              </div>
+            </div>
+            <div className="flex gap-3 p-5 pt-0">
+              <button onClick={onClose} disabled={saving} className="flex-1 py-3 border border-gray-200 rounded-xl text-sm font-semibold text-gray-500 hover:bg-gray-50 transition-colors disabled:opacity-40">Cancelar</button>
+              <button onClick={handleSave} disabled={!f.title.trim()||saving}
+                className="flex-1 py-3 bg-blue-500 text-white rounded-xl text-sm font-bold hover:bg-blue-600 disabled:opacity-40 transition-colors">
+                {saving?"Salvando...":isNew?"Criar Evento":"Salvar"}
+              </button>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-        // Eventos
-        const u1=db.collection("events").onSnapshot(snap=>{
-          setEvs(snap.docs.map(d=>({id:d.id,...d.data()})));
-          setLoading(false); setSynced(true);
-        }, ()=>setLoading(false));
+    function EventDetail({ev,types,onEdit,onDelete,onClose}) {
+      const cat=CATS.find(c=>c.id===ev.category), type=types.find(t=>t.id===ev.typeId);
+      const d=new Date(ev.date+"T12:00:00");
+      const dl=d.toLocaleDateString("pt-BR",{weekday:"long",day:"numeric",month:"long",year:"numeric"});
+      const rLabel={none:"Não repete",weekly:"Repete semanalmente",monthly:"Repete mensalmente",annual:"Repete anualmente"}[ev.recurrence||"none"];
+      return (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-sm overflow-hidden fade-in">
+            <div className="p-5 pb-4" style={{backgroundColor:type?.color||"#F3F4F6"}}>
+              <div className="flex items-start justify-between mb-2">
+                <span style={{fontSize:"2rem"}}>{type?.emoji||"📌"}</span>
+                <button onClick={onClose} className="p-1.5 hover:bg-black hover:bg-opacity-10 rounded-full transition-colors"><XIcon s={16} c="text-gray-600"/></button>
+              </div>
+              <h2 className="text-xl font-bold text-gray-800 leading-tight">{ev.title}</h2>
+              <div className="flex items-center gap-2 mt-2">
+                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-bold text-white" style={{backgroundColor:cat?.color}}>{cat?.label}</span>
+                <span className="text-xs text-gray-500 font-medium">{type?.label}</span>
+              </div>
+            </div>
+            <div className="p-5 space-y-3">
+              <div className="flex items-start gap-3">
+                <span className="text-base mt-0.5">📅</span>
+                <div>
+                  <p className="text-sm font-semibold text-gray-800 capitalize">{dl}</p>
+                  <p className="text-xs text-gray-400 mt-0.5">{ev.allDay?"Dia todo":`${ev.startTime} — ${ev.endTime}`}</p>
+                </div>
+              </div>
+              {ev.recurrence&&ev.recurrence!=="none"&&(
+                <div className="flex items-center gap-3"><span>🔄</span><p className="text-sm text-gray-500">{rLabel}</p></div>
+              )}
+              {ev.notes&&(
+                <div className="flex items-start gap-3"><span className="mt-0.5">💬</span><p className="text-sm text-gray-600 leading-relaxed">{ev.notes}</p></div>
+              )}
+            </div>
+            <div className="flex gap-3 p-5 pt-0">
+              <button onClick={()=>onDelete(ev)} className="flex items-center justify-center gap-2 flex-1 py-2.5 border border-red-200 text-red-500 rounded-xl text-sm font-semibold hover:bg-red-50 transition-colors"><Trash s={14}/>Excluir</button>
+              <button onClick={()=>onEdit(ev)} className="flex items-center justify-center gap-2 flex-1 py-2.5 bg-blue-500 text-white rounded-xl text-sm font-bold hover:bg-blue-600 transition-colors"><Edit s={14}/>Editar</button>
+            </div>
+          </div>
+        </div>
+      );
+    }
 
-        // Tipos de evento — semeia os padrões se vazio
-        const u2=db.collection("eventTypes").onSnapshot(snap=>{
-          if(!snap.empty){
-            setTypes(snap.docs.map(d=>({id:d.id,...d.data()})));
-          } else {
-            const batch=db.batch();
-            DEF_TYPES.forEach(t=>{ const ref=db.collection("eventTypes").doc(t.id); batch.set(ref,{label:t.label,emoji:t.emoji,color:t.color}); });
-            batch.commit();
-          }
-        });
+    function App() {
+      const [evs,setEvs]         = useState([]);
+      const [types,setTypes]     = useState(DEF_TYPES);
+      const [view,setView]       = useState("monthly");
+      const [cur,setCur]         = useState(new Date());
+      const [filters,setFilters] = useState(CATS.map(c=>c.id));
+      const [showModal,setShowModal] = useState(false);
+      const [editing,setEditing] = useState(null);
+      const [detail,setDetail]   = useState(null);
+      const [confirmDel,setConfirmDel] = useState(null);
+      const [loading,setLoading] = useState(true);
+      const [synced,setSynced]   = useState(false);
+      const [toast,setToast]     = useState(null);
 
-        return ()=>{ u1(); u2(); };
-      },[]);
+      const showToast = (msg,type="ok") => setToast({msg,type});
 
-      const saveEv = useCallback(async evData=>{
-        if(!db) return;
-        const {id,...data}=evData;
-        if(id) await db.collection("events").doc(id).update(data);
-        else   await db.collection("events").add(data);
-        setShowModal(false); setEditing(null);
-      },[]);
+      useEffect(()=>{
+        if(!db){ setLoading(false); return; }
 
-      const delEv = useCallback(async id=>{
-        if(!db) return;
-        await db.collection("events").doc(id).delete();
-        setDetail(null);
-      },[]);
+        const u1=db.collection("events").onSnapshot(
+          { includeMetadataChanges: true },
+          snap=>{ 
+            setEvs(snap.docs.map(d=>({id:d.id,...d.data()}))); 
+            setLoading(false); 
+            // Verifica se os dados estão pendentes de envio ao servidor
+            setSynced(!snap.metadata.hasPendingWrites); 
+          },
+          err=>{ console.error("Erro ao carregar eventos:",err); setLoading(false); showToast("Erro de leitura no Firebase.","err"); }
+        );
 
-      const addType = useCallback(async t=>{
-        if(!db) return null;
-        const ref=await db.collection("eventTypes").add(t);
-        return ref.id;
-      },[]);
+        const u2=db.collection("eventTypes").onSnapshot(
+          snap=>{
+            if(!snap.empty){
+              setTypes(snap.docs.map(d=>({id:d.id,...d.data()})));
+            } else {
+              const batch=db.batch();
+              DEF_TYPES.forEach(t=>{ batch.set(db.collection("eventTypes").doc(t.id),{label:t.label,emoji:t.emoji,color:t.color}); });
+              batch.commit().catch(err=>console.error("Erro ao semear tipos:",err));
+            }
+          },
+          err=>console.error("Erro ao carregar tipos:",err)
+        );
 
-      const toggleF = id=>setFilters(p=>p.includes(id)?(p.length>1?p.filter(x=>x!==id):p):[...p,id]);
+        return ()=>{ u1(); u2(); };
+      },[]);
 
-      const nav = dir=>{
-        const d=new Date(cur);
-        if(view==="daily")        d.setDate(d.getDate()+dir);
-        else if(view==="weekly")  d.setDate(d.getDate()+dir*7);
-        else if(view==="monthly") d.setMonth(d.getMonth()+dir);
-        else                      d.setFullYear(d.getFullYear()+dir);
-        setCur(d);
-      };
+      const saveEv = useCallback(async evData=>{
+        if(!db) return;
+        const {id,...data}=evData;
+        if(id) await db.collection("events").doc(id).update(data);
+        else   await db.collection("events").add(data);
+      },[]);
 
-      const headerLabel=()=>{
-        const y=cur.getFullYear(), m=cur.getMonth();
-        if(view==="daily")   return cur.toLocaleDateString("pt-BR",{day:"numeric",month:"long",year:"numeric"});
-        if(view==="weekly"){ const s=wkSt(cur),e=addD(s,6); return s.getMonth()===e.getMonth()?`${s.getDate()}–${e.getDate()} de ${MONTHS[m]} ${y}`:`${s.getDate()} ${MONTHS_S[s.getMonth()]} – ${e.getDate()} ${MONTHS_S[e.getMonth()]} ${y}`; }
-        if(view==="monthly") return `${MONTHS[m]} ${y}`;
-        return String(y);
-      };
+      const requestDelete = useCallback(ev=>{ setDetail(null); setConfirmDel(ev); },[]);
 
-      const onDay  = d=>{ setCur(d); setView("daily"); };
-      const onMon  = m=>{ setCur(new Date(cur.getFullYear(),m,1)); setView("monthly"); };
-      const openNew= ()=>{ setEditing(null); setShowModal(true); };
+      const confirmDelete = useCallback(async()=>{
+        if(!db||!confirmDel) return;
+        try {
+          await db.collection("events").doc(confirmDel.id).delete();
+          showToast("Evento excluído.","ok");
+        } catch(err) {
+          console.error("Erro ao excluir:",err);
+          showToast("Erro ao excluir evento.","err");
+        } finally {
+          setConfirmDel(null);
+        }
+      },[confirmDel]);
 
-      // Tela de loading
-      if(loading) return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50">
-          <div className="text-center">
-            <div style={{fontSize:"3rem"}} className="mb-3 pulse-dot">📅</div>
-            <p className="text-sm text-gray-400">Carregando agenda...</p>
-          </div>
-        </div>
-      );
+      const addType = useCallback(async t=>{
+        if(!db) return null;
+        const ref=await db.collection("eventTypes").add(t);
+        return ref.id;
+      },[]);
 
-      // Tela de configuração (Firebase não configurado)
-      if(!db) return (
-        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-8">
-          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-md text-center">
-            <div style={{fontSize:"3rem"}} className="mb-4">⚙️</div>
-            <h2 className="text-xl font-bold text-gray-800 mb-2">Configure o Firebase</h2>
-            <p className="text-sm text-gray-500 leading-relaxed">
-              Edite o arquivo <code className="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-xs">index.html</code> e preencha o bloco
-              <code className="bg-gray-100 px-1.5 py-0.5 rounded font-mono text-xs ml-1">FIREBASE_CONFIG</code> com as credenciais do seu projeto Firebase.
-            </p>
-            <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer"
-              className="inline-block mt-4 px-4 py-2 bg-orange-500 text-white text-sm font-bold rounded-xl hover:bg-orange-600 transition-colors">
-              Abrir Firebase Console →
-            </a>
-          </div>
-        </div>
-      );
+      const toggleF = id=>setFilters(p=>p.includes(id)?(p.length>1?p.filter(x=>x!==id):p):[...p,id]);
 
-      return (
-        <div className="min-h-screen bg-gray-50 flex flex-col">
+      const nav = dir=>{
+        const d=new Date(cur);
+        if(view==="daily")        d.setDate(d.getDate()+dir);
+        else if(view==="weekly")  d.setDate(d.getDate()+dir*7);
+        else if(view==="monthly") d.setMonth(d.getMonth()+dir);
+        else                      d.setFullYear(d.getFullYear()+dir);
+        setCur(d);
+      };
 
-          {/* ── HEADER ────────────────────────────────────────────── */}
-          <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-30">
-            <div className="max-w-5xl mx-auto px-4 pt-4 pb-2">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <span style={{fontSize:"1.5rem"}}>🏠</span>
-                  <div>
-                    <h1 className="text-base font-bold text-gray-800 leading-tight">Agenda da Família</h1>
-                    <div className="flex items-center gap-1.5">
-                      <p className="text-xs text-gray-400">Martins Rezende da Silva</p>
-                      {synced&&<span className="w-1.5 h-1.5 rounded-full bg-green-400 pulse-dot" title="Sincronizado com Firebase"/>}
-                    </div>
-                  </div>
-                </div>
-                <button onClick={openNew} className="hidden sm:flex items-center gap-2 px-4 py-2 bg-blue-500 text-white text-sm font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-sm">
-                  <Plus s={16}/> Novo Evento
-                </button>
-              </div>
+      const headerLabel=()=>{
+        const y=cur.getFullYear(), m=cur.getMonth();
+        if(view==="daily")   return cur.toLocaleDateString("pt-BR",{day:"numeric",month:"long",year:"numeric"});
+        if(view==="weekly"){ const s=wkSt(cur),e=addD(s,6); return s.getMonth()===e.getMonth()?`${s.getDate()}–${e.getDate()} de ${MONTHS[m]} ${y}`:`${s.getDate()} ${MONTHS_S[s.getMonth()]} – ${e.getDate()} ${MONTHS_S[e.getMonth()]} ${y}`; }
+        if(view==="monthly") return `${MONTHS[m]} ${y}`;
+        return String(y);
+      };
 
-              <div className="flex items-center justify-between gap-2 mb-2">
-                <div className="flex items-center gap-1">
-                  <button onClick={()=>nav(-1)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors"><ChevL s={18} c="text-gray-500"/></button>
-                  <button onClick={()=>setCur(new Date())} className="px-2 py-1 text-xs font-bold text-blue-500 hover:bg-blue-50 rounded-lg transition-colors">Hoje</button>
-                  <span className="text-sm font-bold text-gray-700 px-1 capitalize" style={{minWidth:"max-content"}}>{headerLabel()}</span>
-                  <button onClick={()=>nav(1)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors"><ChevR s={18} c="text-gray-500"/></button>
-                </div>
-                <div className="flex bg-gray-100 rounded-xl p-1 gap-0.5">
-                  {[{id:"daily",l:"Dia"},{id:"weekly",l:"Sem"},{id:"monthly",l:"Mês"},{id:"annual",l:"Ano"}].map(v=>(
-                    <button key={v.id} onClick={()=>setView(v.id)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${view===v.id?"bg-white text-blue-600 shadow-sm":"text-gray-400 hover:text-gray-600"}`}>{v.l}</button>
-                  ))}
-                </div>
-              </div>
-            </div>
+      const onDay  = d=>{ setCur(d); setView("daily"); };
+      const onMon  = m=>{ setCur(new Date(cur.getFullYear(),m,1)); setView("monthly"); };
+      const openNew= ()=>{ setEditing(null); setShowModal(true); };
+      const closeModal = ()=>{ setShowModal(false); setEditing(null); };
 
-            {/* Filtros */}
-            <div className="border-t border-gray-50 px-4 py-2">
-              <div className="max-w-5xl mx-auto flex gap-2 overflow-x-auto pb-0.5">
-                {CATS.map(cat=>(
-                  <button key={cat.id} onClick={()=>toggleF(cat.id)}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0"
-                    style={{backgroundColor:filters.includes(cat.id)?cat.color+"20":"#F3F4F6",color:filters.includes(cat.id)?cat.color:"#9CA3AF",border:`1.5px solid ${filters.includes(cat.id)?cat.color:"transparent"}`}}>
-                    <span className="w-2 h-2 rounded-full" style={{backgroundColor:filters.includes(cat.id)?cat.color:"#D1D5DB"}}/>{cat.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-          </header>
+      if(loading) return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center">
+            <div style={{fontSize:"3rem"}} className="mb-3 pulse-dot">📅</div>
+            <p className="text-sm text-gray-400">Sincronizando banco de dados...</p>
+          </div>
+        </div>
+      );
 
-          {/* ── CONTEÚDO ──────────────────────────────────────────── */}
-          <main className="flex-1 max-w-5xl mx-auto w-full px-2 py-3">
-            <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
-              {view==="daily"   &&<DailyView   cur={cur} evs={evs} types={types} filters={filters} onClick={setDetail}/>}
-              {view==="weekly"  &&<WeeklyView  cur={cur} evs={evs} types={types} filters={filters} onClick={setDetail} onDay={onDay}/>}
-              {view==="monthly" &&<MonthlyView cur={cur} evs={evs} types={types} filters={filters} onClick={setDetail} onDay={onDay}/>}
-              {view==="annual"  &&<AnnualView  cur={cur} evs={evs} types={types} filters={filters} onMonth={onMon}/>}
-            </div>
-          </main>
+      if(!db) return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50 p-8">
+          <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-8 max-w-md text-center">
+            <div style={{fontSize:"3rem"}} className="mb-4">⚙️</div>
+            <h2 className="text-xl font-bold text-gray-800 mb-2">Configure o Firebase</h2>
+            <p className="text-sm text-gray-500 leading-relaxed">Preencha o bloco <code className="bg-gray-100 px-1.5 rounded text-xs">FIREBASE_CONFIG</code> com as credenciais do seu projeto.</p>
+            <a href="https://console.firebase.google.com" target="_blank" rel="noopener noreferrer"
+              className="inline-block mt-4 px-4 py-2 bg-orange-500 text-white text-sm font-bold rounded-xl hover:bg-orange-600 transition-colors">
+              Abrir Firebase Console →
+            </a>
+          </div>
+        </div>
+      );
 
-          {/* FAB mobile */}
-          <button onClick={openNew} className="fixed bottom-6 right-6 sm:hidden w-14 h-14 bg-blue-500 text-white rounded-full shadow-xl flex items-center justify-center hover:bg-blue-600 z-20">
-            <Plus s={24}/>
-          </button>
+      return (
+        <div className="min-h-screen bg-gray-50 flex flex-col">
 
-          {/* MODAIS */}
-          {showModal&&<EventModal ev={editing} types={types} onSave={saveEv} onClose={()=>{setShowModal(false);setEditing(null);}} onAddType={addType}/>}
-          {detail&&<EventDetail ev={detail} types={types} onEdit={e=>{setDetail(null);setEditing(e);setShowModal(true);}} onDelete={delEv} onClose={()=>setDetail(null)}/>}
-        </div>
-      );
-    }
+          <header className="bg-white border-b border-gray-100 shadow-sm sticky top-0 z-30">
+            <div className="max-w-5xl mx-auto px-4 pt-4 pb-2">
+              <div className="flex items-center justify-between mb-3">
+                <div className="flex items-center gap-2">
+                  <span style={{fontSize:"1.5rem"}}>🏠</span>
+                  <div>
+                    <h1 className="text-base font-bold text-gray-800 leading-tight">Agenda da Família</h1>
+                    <div className="flex items-center gap-1.5">
+                      <p className="text-xs text-gray-400">Martins Rezende da Silva</p>
+                      <span className={`w-1.5 h-1.5 rounded-full ${synced ? 'bg-green-400 pulse-dot' : 'bg-orange-400'}`} title={synced ? "Sincronizado" : "Sincronização Pendente"}/>
+                    </div>
+                  </div>
+                </div>
+                <button onClick={openNew} className="hidden sm:flex items-center gap-2 px-4 py-2 bg-blue-500 text-white text-sm font-bold rounded-xl hover:bg-blue-600 transition-colors shadow-sm">
+                  <Plus s={16}/> Novo Evento
+                </button>
+              </div>
+              <div className="flex items-center justify-between gap-2 mb-2">
+                <div className="flex items-center gap-1">
+                  <button onClick={()=>nav(-1)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors"><ChevL s={18} c="text-gray-500"/></button>
+                  <button onClick={()=>setCur(new Date())} className="px-2 py-1 text-xs font-bold text-blue-500 hover:bg-blue-50 rounded-lg transition-colors">Hoje</button>
+                  <span className="text-sm font-bold text-gray-700 px-1 capitalize" style={{minWidth:"max-content"}}>{headerLabel()}</span>
+                  <button onClick={()=>nav(1)} className="p-2 hover:bg-gray-100 rounded-lg transition-colors"><ChevR s={18} c="text-gray-500"/></button>
+                </div>
+                <div className="flex bg-gray-100 rounded-xl p-1 gap-0.5">
+                  {[{id:"daily",l:"Dia"},{id:"weekly",l:"Sem"},{id:"monthly",l:"Mês"},{id:"annual",l:"Ano"}].map(v=>(
+                    <button key={v.id} onClick={()=>setView(v.id)} className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${view===v.id?"bg-white text-blue-600 shadow-sm":"text-gray-400 hover:text-gray-600"}`}>{v.l}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="border-t border-gray-50 px-4 py-2">
+              <div className="max-w-5xl mx-auto flex gap-2 overflow-x-auto pb-0.5">
+                {CATS.map(cat=>(
+                  <button key={cat.id} onClick={()=>toggleF(cat.id)}
+                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all flex-shrink-0"
+                    style={{backgroundColor:filters.includes(cat.id)?cat.color+"20":"#F3F4F6",color:filters.includes(cat.id)?cat.color:"#9CA3AF",border:`1.5px solid ${filters.includes(cat.id)?cat.color:"transparent"}`}}>
+                    <span className="w-2 h-2 rounded-full" style={{backgroundColor:filters.includes(cat.id)?cat.color:"#D1D5DB"}}/>{cat.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </header>
 
-    // ── RENDER ────────────────────────────────────────────────────────
-    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
-  </script>
+          <main className="flex-1 max-w-5xl mx-auto w-full px-2 py-3">
+            <div className="bg-white rounded-2xl shadow-sm overflow-hidden border border-gray-100">
+              {view==="daily"   &&<DailyView   cur={cur} evs={evs} types={types} filters={filters} onClick={setDetail}/>}
+              {view==="weekly"  &&<WeeklyView  cur={cur} evs={evs} types={types} filters={filters} onClick={setDetail} onDay={onDay}/>}
+              {view==="monthly" &&<MonthlyView cur={cur} evs={evs} types={types} filters={filters} onClick={setDetail} onDay={onDay}/>}
+              {view==="annual"  &&<AnnualView  cur={cur} evs={evs} types={types} filters={filters} onMonth={onMon}/>}
+            </div>
+          </main>
+
+          <button onClick={openNew} className="fixed bottom-6 right-6 sm:hidden w-14 h-14 bg-blue-500 text-white rounded-full shadow-xl flex items-center justify-center hover:bg-blue-600 z-20">
+            <Plus s={24}/>
+          </button>
+
+          {showModal&&<EventModal ev={editing} types={types} onSave={saveEv} onClose={closeModal} onAddType={addType} onToast={showToast}/>}
+          {detail&&<EventDetail ev={detail} types={types} onEdit={e=>{setDetail(null);setEditing(e);setShowModal(true);}} onDelete={requestDelete} onClose={()=>setDetail(null)}/>}
+          {confirmDel&&<Confirm msg={`Excluir "${confirmDel.title}"?`} onYes={confirmDelete} onNo={()=>setConfirmDel(null)}/>}
+          {toast&&<Toast msg={toast.msg} type={toast.type} onDone={()=>setToast(null)}/>}
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App/>);
+  </script>
 </body>
 </html>
