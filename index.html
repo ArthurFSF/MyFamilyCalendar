@@ -11,12 +11,16 @@
   <script defer crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script defer crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script defer src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+  <style>
+    body{background:#F9FAFB;font-family:system-ui,sans-serif}
+    .no-scrollbar::-webkit-scrollbar{display:none}
+  </style>
 </head>
-<body class="bg-gray-50">
+<body>
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useMemo } = React;
+    const { useState, useEffect } = React;
     const FIREBASE_CONFIG = { apiKey: "AIzaSyC6QarZdSXDIcs4tAQZGYkQR1gcI9yAU8E", authDomain: "agendafamiliar-27b26.firebaseapp.com", projectId: "agendafamiliar-27b26", storageBucket: "agendafamiliar-27b26.firebasestorage.app", messagingSenderId: "427096201759", appId: "1:427096201759:web:c4f9ff05681423a856932a" };
     
     let db = null;
@@ -29,38 +33,55 @@
 
       useEffect(() => {
         if(!db) return;
-        return db.collection("events").onSnapshot(s => {
-          setEvs(s.docs.map(d=>({id:d.id, ...d.data()})));
-        }, err => console.error("Firebase Auth Error:", err));
+        return db.collection("events").onSnapshot(s => setEvs(s.docs.map(d=>({id:d.id, ...d.data()}))));
       }, []);
 
-      const sortedEvents = useMemo(() => 
-        evs.sort((a,b) => a.date.localeCompare(b.date)), [evs]
-      );
+      const getTodayStr = () => new Date().toISOString().split('T')[0];
 
       return (
-        <div className="max-w-md mx-auto pb-20">
-          <header className="bg-white p-4 border-b sticky top-0 z-10 shadow-sm">
-            <h1 className="text-lg font-black mb-3">Agenda da Família</h1>
-            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
-              {['daily','weekly','monthly','annual','timeline'].map(v => (
-                <button key={v} onClick={() => setView(v)} className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase ${view===v?'bg-blue-600 text-white':'bg-gray-100'}`}>
-                  {v === 'timeline' ? 'Resumo' : v}
-                </button>
+        <div className="pb-20 max-w-md mx-auto">
+          <header className="bg-white sticky top-0 z-20 border-b p-4">
+            <h1 className="text-xl font-black mb-4">Agenda da Família</h1>
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
+              {[ {id:"daily", l:"Hoje"}, {id:"weekly", l:"Semana"}, {id:"monthly", l:"Mês"}, {id:"annual", l:"Ano"}, {id:"timeline", l:"Resumo"} ].map(v => (
+                <button key={v.id} onClick={() => setView(v.id)} className={`px-4 py-2 rounded-lg text-xs font-bold whitespace-nowrap ${view===v.id ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>{v.l}</button>
               ))}
             </div>
           </header>
 
           <main>
+            {/* VIEW: HOJE (VERTICAL) */}
+            {view === "daily" && (
+              <div className="p-4 space-y-3">
+                {evs.filter(e => e.date === getTodayStr()).map(ev => (
+                  <div key={ev.id} className="p-4 bg-white rounded-xl shadow-sm border" onClick={()=>setDetail(ev)}>{ev.title}</div>
+                ))}
+              </div>
+            )}
+
+            {/* VIEW: SEMANA (VERTICAL) */}
+            {view === "weekly" && (
+              <div className="p-4 space-y-6">
+                {Array.from({length:7}).map((_, i) => {
+                  const d = new Date(); d.setDate(d.getDate() + i);
+                  const ds = d.toISOString().split('T')[0];
+                  return (
+                    <div key={i} className="border-l-4 border-blue-500 pl-4">
+                      <p className="text-xs font-bold text-gray-500 uppercase">{d.toLocaleDateString('pt-BR', {weekday:'long'})}</p>
+                      {evs.filter(e => e.date === ds).map(ev => <div key={ev.id} className="text-sm py-1" onClick={()=>setDetail(ev)}>{ev.title}</div>)}
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+
+            {/* VIEW: RESUMO (TIMELINE VERTICAL) */}
             {view === "timeline" && (
               <div className="p-4 space-y-3">
-                {sortedEvents.filter(e => e.date >= new Date().toISOString().split('T')[0]).map(ev => (
-                  <div key={ev.id} className="bg-white p-4 rounded-xl border flex gap-4 items-center" onClick={() => setDetail(ev)}>
-                    <div className="w-10 text-center font-black text-blue-600 border-r">{ev.date.split('-')[2]}</div>
-                    <div>
-                      <p className="font-bold text-sm">{ev.title}</p>
-                      <p className="text-[10px] text-gray-400">{ev.date}</p>
-                    </div>
+                {evs.filter(e => e.date >= getTodayStr()).sort((a,b) => a.date.localeCompare(b.date)).map(ev => (
+                  <div key={ev.id} className="bg-white p-4 rounded-xl border flex gap-4" onClick={() => setDetail(ev)}>
+                    <div className="text-center w-12 font-black text-blue-600">{ev.date.split('-')[2]}</div>
+                    <div><p className="font-bold text-sm">{ev.title}</p><p className="text-xs text-gray-400">{ev.date}</p></div>
                   </div>
                 ))}
               </div>
@@ -68,11 +89,12 @@
           </main>
 
           {detail && (
-            <div className="fixed inset-0 bg-black/50 p-4 flex items-center justify-center z-50" onClick={() => setDetail(null)}>
-              <div className="bg-white w-full rounded-2xl p-6" onClick={e=>e.stopPropagation()}>
-                <h2 className="font-black text-lg">{detail.title}</h2>
-                <p className="text-gray-500">{detail.date}</p>
-                <button className="mt-6 w-full py-3 bg-red-500 text-white font-bold rounded-xl" onClick={() => {db.collection("events").doc(detail.id).delete(); setDetail(null);}}>Excluir Evento</button>
+            <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-0 sm:p-4" onClick={() => setDetail(null)}>
+              <div className="bg-white w-full h-full sm:h-auto sm:max-w-sm sm:rounded-3xl p-8 flex flex-col justify-center" onClick={e=>e.stopPropagation()}>
+                <h2 className="text-2xl font-black">{detail.title}</h2>
+                <p className="text-gray-500 mt-2 text-lg">{detail.date}</p>
+                <button className="w-full mt-10 py-4 bg-red-500 text-white rounded-2xl font-bold text-lg" onClick={() => {db.collection("events").doc(detail.id).delete(); setDetail(null);}}>Excluir Evento</button>
+                <button className="w-full mt-4 py-4 bg-gray-100 rounded-2xl font-bold text-lg" onClick={() => setDetail(null)}>Voltar</button>
               </div>
             </div>
           )}
