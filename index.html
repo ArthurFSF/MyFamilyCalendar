@@ -3,7 +3,6 @@
 <head>
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover"/>
-  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
   <link rel="manifest" href="manifest.json">
   <title>Agenda Família Martins</title>
   <script defer src="https://cdn.tailwindcss.com"></script>
@@ -12,87 +11,68 @@
   <script defer crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
   <script defer crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
   <script defer src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-  <style>
-    body{background:#F9FAFB;font-family:system-ui,sans-serif;-webkit-text-size-adjust:100%}
-    .modal-open{overflow:hidden;position:fixed;width:100%}
-    .no-scrollbar::-webkit-scrollbar{display:none}
-    .fade-in{animation:fadeIn .2s ease}
-    @keyframes fadeIn{from{opacity:0;transform:translateY(5px)}to{opacity:1;transform:translateY(0)}}
-  </style>
 </head>
-<body>
+<body class="bg-gray-50">
   <div id="root"></div>
 
   <script type="text/babel">
-    const { useState, useEffect, useCallback } = React;
+    const { useState, useEffect, useMemo } = React;
     const FIREBASE_CONFIG = { apiKey: "AIzaSyC6QarZdSXDIcs4tAQZGYkQR1gcI9yAU8E", authDomain: "agendafamiliar-27b26.firebaseapp.com", projectId: "agendafamiliar-27b26", storageBucket: "agendafamiliar-27b26.firebasestorage.app", messagingSenderId: "427096201759", appId: "1:427096201759:web:c4f9ff05681423a856932a" };
     
     let db = null;
     try { firebase.initializeApp(FIREBASE_CONFIG); db = firebase.firestore(); } catch(e) {}
 
-    const CATS = [{id:"arthur",label:"Arthur",color:"#3B82F6"},{id:"anne",label:"Anne",color:"#8B5CF6"},{id:"joao",label:"João",color:"#10B981"},{id:"maria",label:"Maria",color:"#F472B6"},{id:"familia",label:"Família",color:"#F59E0B"}];
-    const MONTHS_S = ["Jan","Fev","Mar","Abr","Mai","Jun","Jul","Ago","Set","Out","Nov","Dez"];
-    
-    const toStr = d => d.toISOString().split('T')[0];
-
     function App() {
       const [evs, setEvs] = useState([]);
-      const [view, setView] = useState("daily");
-      const [cur, setCur] = useState(new Date());
-      const [filters, setFilters] = useState(CATS.map(c=>c.id));
+      const [view, setView] = useState("timeline");
       const [detail, setDetail] = useState(null);
 
       useEffect(() => {
         if(!db) return;
-        const start = toStr(new Date(new Date().setMonth(new Date().getMonth()-3)));
-        const end = toStr(new Date(new Date().setMonth(new Date().getMonth()+12)));
-        return db.collection("events").where("date", ">=", start).where("date", "<=", end).onSnapshot(s => setEvs(s.docs.map(d=>({id:d.id,...d.data()}))));
+        return db.collection("events").onSnapshot(s => {
+          setEvs(s.docs.map(d=>({id:d.id, ...d.data()})));
+        }, err => console.error("Firebase Auth Error:", err));
       }, []);
 
-      // Visualização Resumo (Lista Vertical)
-      const Timeline = () => {
-        const upcoming = evs.filter(e => e.date >= toStr(new Date()) && filters.includes(e.category)).sort((a,b) => a.date.localeCompare(b.date));
-        return (
-          <div className="p-4 space-y-4">
-            {upcoming.map((ev, i) => (
-              <div key={i} className="flex gap-4 p-3 bg-white rounded-xl shadow-sm border border-gray-100" onClick={() => setDetail(ev)}>
-                <div className="w-12 text-center border-r border-gray-100">
-                  <p className="text-[10px] uppercase font-bold text-gray-400">{MONTHS_S[new Date(ev.date).getMonth()]}</p>
-                  <p className="font-black text-gray-800">{new Date(ev.date).getDate()}</p>
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm font-bold">{ev.title}</p>
-                  <p className="text-xs text-gray-500">{ev.allDay ? "Dia todo" : ev.startTime}</p>
-                </div>
-              </div>
-            ))}
-          </div>
-        );
-      };
+      const sortedEvents = useMemo(() => 
+        evs.sort((a,b) => a.date.localeCompare(b.date)), [evs]
+      );
 
       return (
-        <div className="pb-20">
-          <header className="bg-white sticky top-0 z-20 border-b p-4">
-            <h1 className="text-xl font-black mb-4">Agenda da Família</h1>
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-2">
-              {[{id:"daily",l:"Hoje"},{id:"weekly",l:"Semana"},{id:"monthly",l:"Mês"},{id:"timeline",l:"Resumo"}].map(v => (
-                <button key={v.id} onClick={() => setView(v.id)} className={`px-4 py-2 rounded-lg text-xs font-bold ${view===v.id ? 'bg-blue-600 text-white' : 'bg-gray-100'}`}>{v.l}</button>
+        <div className="max-w-md mx-auto pb-20">
+          <header className="bg-white p-4 border-b sticky top-0 z-10 shadow-sm">
+            <h1 className="text-lg font-black mb-3">Agenda da Família</h1>
+            <div className="flex gap-2 overflow-x-auto pb-1 no-scrollbar">
+              {['daily','weekly','monthly','annual','timeline'].map(v => (
+                <button key={v} onClick={() => setView(v)} className={`px-4 py-1.5 rounded-lg text-[10px] font-bold uppercase ${view===v?'bg-blue-600 text-white':'bg-gray-100'}`}>
+                  {v === 'timeline' ? 'Resumo' : v}
+                </button>
               ))}
             </div>
           </header>
 
           <main>
-            {view === "daily" && <div className="p-4">{evs.filter(e => e.date === toStr(cur)).map(e => <div key={e.id} className="p-4 bg-white rounded-xl mb-2" onClick={()=>setDetail(e)}>{e.title}</div>)}</div>}
-            {view === "weekly" && <div className="flex flex-col">{Array.from({length:7}).map((_,i) => <div key={i} className="p-4 border-b">Dia {i+1}</div>)}</div>}
-            {view === "timeline" && <Timeline />}
+            {view === "timeline" && (
+              <div className="p-4 space-y-3">
+                {sortedEvents.filter(e => e.date >= new Date().toISOString().split('T')[0]).map(ev => (
+                  <div key={ev.id} className="bg-white p-4 rounded-xl border flex gap-4 items-center" onClick={() => setDetail(ev)}>
+                    <div className="w-10 text-center font-black text-blue-600 border-r">{ev.date.split('-')[2]}</div>
+                    <div>
+                      <p className="font-bold text-sm">{ev.title}</p>
+                      <p className="text-[10px] text-gray-400">{ev.date}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </main>
 
           {detail && (
-            <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4" onClick={() => setDetail(null)}>
-              <div className="bg-white w-full sm:max-w-sm rounded-t-3xl sm:rounded-2xl p-6 fade-in" onClick={e=>e.stopPropagation()}>
-                <h2 className="text-xl font-black">{detail.title}</h2>
-                <p className="text-gray-500 mt-2">{detail.date}</p>
-                <button className="w-full mt-6 py-3 bg-red-500 text-white rounded-xl font-bold" onClick={() => {db.collection("events").doc(detail.id).delete(); setDetail(null);}}>Excluir</button>
+            <div className="fixed inset-0 bg-black/50 p-4 flex items-center justify-center z-50" onClick={() => setDetail(null)}>
+              <div className="bg-white w-full rounded-2xl p-6" onClick={e=>e.stopPropagation()}>
+                <h2 className="font-black text-lg">{detail.title}</h2>
+                <p className="text-gray-500">{detail.date}</p>
+                <button className="mt-6 w-full py-3 bg-red-500 text-white font-bold rounded-xl" onClick={() => {db.collection("events").doc(detail.id).delete(); setDetail(null);}}>Excluir Evento</button>
               </div>
             </div>
           )}
