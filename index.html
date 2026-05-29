@@ -182,18 +182,26 @@
       const ws=wkSt(cur), days=Array.from({length:7},(_,i)=>addD(ws,i));
       const today=toStr(new Date()), curDs=toStr(cur);
       return (
-        <div className="overflow-x-auto no-scrollbar">
-          <div className="grid min-w-full" style={{gridTemplateColumns:"repeat(7,minmax(130px,1fr))"}}>
+        <div className="overflow-x-hidden sm:overflow-x-auto no-scrollbar">
+          <div className="grid grid-cols-7 min-w-full sm:min-w-[900px]">
             {days.map((day,i)=>{
               const ds=toStr(day), devs=evFor(evs,ds,filters), iT=ds===today, iC=ds===curDs;
               return (
-                <div key={i} className="border-r border-gray-100 last:border-r-0 flex flex-col">
-                  <div className="p-3 text-center border-b border-gray-100 cursor-pointer hover:bg-gray-50" onClick={()=>onDay(day)}>
-                    <p className="text-xs font-bold text-gray-400 uppercase tracking-wide">{DAYS[day.getDay()]}</p>
-                    <div className={`w-9 h-9 mx-auto mt-1.5 flex items-center justify-center rounded-full text-sm font-bold ${iT?"bg-blue-500 text-white shadow-md":iC?"bg-blue-100 text-blue-700":"text-gray-700"}`}>{day.getDate()}</div>
+                <div key={i} className="border-r border-gray-100 last:border-r-0 flex flex-col cursor-pointer transition-colors hover:bg-gray-50" onClick={()=>onDay(day)}>
+                  <div className="p-2 sm:p-3 text-center border-b border-gray-100">
+                    <p className="text-[10px] sm:text-xs font-bold text-gray-400 uppercase tracking-wide">{DAYS[day.getDay()]}</p>
+                    <div className={`w-6 h-6 sm:w-9 sm:h-9 mx-auto mt-1 sm:mt-1.5 flex items-center justify-center rounded-full text-[11px] sm:text-sm font-bold ${iT?"bg-blue-500 text-white shadow-md":iC?"bg-blue-100 text-blue-700":"text-gray-700"}`}>{day.getDate()}</div>
                   </div>
-                  <div className="p-1.5 space-y-1.5 flex-1 bg-gray-50 bg-opacity-30 min-h-[300px]">
-                    {devs.map(e=><Chip key={e.id+ds} ev={e} types={types} compact onClick={onClick}/>)}
+                  <div className="p-1 sm:p-1.5 flex-1 bg-gray-50 bg-opacity-30 min-h-[5rem] sm:min-h-[300px]">
+                    {/* Visualização Completa (Desktop) */}
+                    <div className="space-y-1.5 hidden sm:block">
+                      {devs.map(e=><Chip key={e.id+ds} ev={e} types={types} compact onClick={onClick}/>)}
+                    </div>
+                    {/* Visualização Minimalista (Mobile) */}
+                    <div className="flex flex-wrap justify-center content-start gap-1 sm:hidden pt-1 px-0.5">
+                      {devs.slice(0,4).map(e=> <span key={e.id+ds} className="w-1.5 h-1.5 rounded-full" style={{backgroundColor: CATS.find(c=>c.id===e.category)?.color || '#ccc'}} /> )}
+                      {devs.length>4 && <span className="w-1.5 h-1.5 rounded-full bg-gray-300"/>}
+                    </div>
                   </div>
                 </div>
               );
@@ -293,7 +301,7 @@
             ...f, 
             id: ev?.id || null, 
             createdAt: ev?.createdAt || new Date().toISOString(),
-            updatedAt: new Date().toISOString() // Prevenção de concorrência
+            updatedAt: new Date().toISOString()
           };
           const saveOperation = onSave(payload);
           const timeout = new Promise((_, reject) => setTimeout(() => reject(new Error("Timeout.")), 5000));
@@ -424,8 +432,8 @@
       useEffect(()=>{ document.body.classList.add("modal-open"); return ()=>document.body.classList.remove("modal-open"); },[]);
 
       return (
-        <div className="fixed inset-0 bg-black sm:bg-opacity-50 flex items-end sm:items-center justify-center z-50 sm:p-4 transition-all">
-          <div className="bg-white w-full h-[85vh] sm:h-auto sm:rounded-2xl sm:max-w-sm flex flex-col fade-in rounded-t-3xl overflow-hidden shadow-2xl">
+        <div className="fixed inset-0 bg-black sm:bg-opacity-50 flex items-center justify-center z-50 sm:p-4 transition-all">
+          <div className="bg-white w-full h-full sm:h-auto sm:rounded-2xl sm:max-w-sm flex flex-col fade-in shadow-2xl">
             <div className="p-6 pb-5 flex-shrink-0" style={{backgroundColor:type?.color||"#F3F4F6"}}>
               <div className="flex items-start justify-between mb-3">
                 <span style={{fontSize:"2.5rem", filter:"drop-shadow(0 2px 4px rgba(0,0,0,0.1))"}}>{type?.emoji||"📌"}</span>
@@ -470,7 +478,7 @@
     function App() {
       const [evs,setEvs]         = useState([]);
       const [types,setTypes]     = useState(DEF_TYPES);
-      const [view,setView]       = useState("daily"); // INICIA NO DASHBOARD DIÁRIO
+      const [view,setView]       = useState("daily");
       const [cur,setCur]         = useState(new Date());
       const [filters,setFilters] = useState(CATS.map(c=>c.id));
       const [showModal,setShowModal] = useState(false);
@@ -486,7 +494,6 @@
       useEffect(()=>{
         if(!db){ setLoading(false); return; }
 
-        // Consulta Segmentada: Evita baixar o histórico completo, restringindo aos arredores da data atual.
         const todayDate = new Date();
         const startBound = toStr(new Date(todayDate.getFullYear(), todayDate.getMonth() - 3, 1));
         const endBound = toStr(new Date(todayDate.getFullYear(), todayDate.getMonth() + 12, 31));
